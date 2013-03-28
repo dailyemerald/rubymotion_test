@@ -13,7 +13,7 @@ class StoryController < UIViewController
   		end
 	end
 
-    self.title = "Alphabet"
+    self.title = "Stories"
     @table = UITableView.alloc.initWithFrame(self.view.bounds)
     @table.dataSource = self
     @table.delegate = self
