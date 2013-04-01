@@ -1,19 +1,18 @@
 class StoryController < UIViewController
   def viewDidLoad
     super
-
-    @data = [{'title' => 'Loading stories...'}]
-	BW::HTTP.get("http://dailyemerald.com/json") do |response|
+    @data = [{'title' => ''}] # this should be in a model or somethin'
+	  BW::HTTP.get("http://dailyemerald.com/section/news/json") do |response|
   		if response.ok?
     		@data = BW::JSON.parse(response.body.to_str)
-    		puts @data
+    		puts "JSON loaded and parsed!"
+        self.title = "Stories"
     		@table.reloadData
   		else
-    		puts response.error_message
+    		puts "ERROR!", response.error_message
   		end
-	end
-
-    self.title = "Stories"
+	  end
+    self.title = "Loading..."
     @table = UITableView.alloc.initWithFrame(self.view.bounds)
     @table.dataSource = self
     @table.delegate = self
@@ -24,24 +23,31 @@ class StoryController < UIViewController
   def tableView(tableView, cellForRowAtIndexPath: indexPath)
     @reuseIdentifier ||= "CELL_IDENTIFIER"
     cell = tableView.dequeueReusableCellWithIdentifier(@reuseIdentifier) || begin
-      UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier:@reuseIdentifier)
+      tvcell = UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier:@reuseIdentifier)
+      webview = UIWebView.alloc.initWithFrame(tvcell.bounds)
+      webview.tag = 11 # no meaning to this number. gets used a few lines down to fish it back out of contentView
+      webview.userInteractionEnabled = false
+      tvcell.contentView.addSubview(webview)          
+      puts "Created a cell! indexPath:#{indexPath.row}"
+      tvcell
     end
-    cell.textLabel.text = @data[indexPath.row]['title']
+    cell.contentView.viewWithTag(11).loadHTMLString("#{@data[indexPath.row]['title']}", baseURL:nil)
 
   	return cell
   end
+
 
   def tableView(tableView, numberOfRowsInSection: section)
     @data.count
   end
 
-  def tableView(tableView, didSelectRowAtIndexPath:indexPath)
-	tableView.deselectRowAtIndexPath(indexPath, animated: true)
+  def tableView(tableView, heightForRowAtIndexPath:indexPath)
+    55
+  end
 
-	alert = UIAlertView.alloc.init
-	alert.message = "#{@data[indexPath.row]['content']}"
-	alert.addButtonWithTitle "OK"
-	alert.show
+  def tableView(tableView, didSelectRowAtIndexPath:indexPath)
+	 tableView.deselectRowAtIndexPath(indexPath, animated: false)
+   self.navigationController.pushViewController(SingleController.alloc.initWithPost(@data[indexPath.row]), animated:true)
   end
 
 end
